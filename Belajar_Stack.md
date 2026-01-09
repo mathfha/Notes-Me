@@ -21,4 +21,3 @@ Kapan Stack berfungsi dalam dunia nyata?
 - `Peek/Top`: Melihat data yang ada di paling atas tanpa menghapusnya
 - `isEmpty`: Mengecek apakah tumpukan kosong.
 
-### Stack di bahasa C melihat alamat memori
