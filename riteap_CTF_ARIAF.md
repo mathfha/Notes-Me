@@ -187,7 +187,7 @@ Good. Here's the flag: FGTE{Hidden_Math_Flag}
 - okey program sudah saya patching biar langsung muntahin flag, sekarang saya jelasin apa yang saya lakukan
 `wx e904000000 @ 0x00001140`
 - Dari 0x1140 lompat ke 0x1149
-- kode di bawah ini tidak bakalan dilewatin
+- kode di bawah ini bakalan dilewatin
 ```
 call fcn.00001350
 test eax, eax   
