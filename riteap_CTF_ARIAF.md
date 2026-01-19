@@ -185,6 +185,19 @@ Good. Here's the flag: FGTE{Hidden_Math_Flag}
 
 ![patching binary](img/patching_question.png)
 - okey program sudah saya patching biar langsung muntahin flag, sekarang saya jelasin apa yang saya lakukan
+`wx e904000000 @ 0x00001140`
+Dari 0x1140 lompat ke 0x1149
+kode di bawah ini tidak bakalan dilewatin
+```
+call fcn.00001350
+test eax, eax   
+je fail            
+```
+
+`pd 7 @ 0x0000113b`
+saya minta tampilkan 7 instruksi dari alamat tersebut
+`0x1140  e904000000  jmp 0x1149`
+artinya patching berhasil
 
 ```
 __int64 __fastcall main(int a1, char **a2, char **a3)

@@ -1,4 +1,5 @@
 *
 !*.md
-!*.png
+!img/
+!img/*.png
 .gitignore
