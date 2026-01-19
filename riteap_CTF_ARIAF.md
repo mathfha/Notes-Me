@@ -6,7 +6,7 @@ Saya lagi belajar pwn dan rev bang ijin nulis **write up**
 
 ## rev :
 - [Leaky Login](#leaky-login) | [Solved]
-- [question](#question)
+- [question](#question) | [Solved]
 - [Verif Password](#verif-password) | [Solved]
 - [Learn Typing](#learn-typing) | [Solved]
 - [Checksumd](#checksumd) | [Solved]
