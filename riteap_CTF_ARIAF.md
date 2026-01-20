@@ -212,7 +212,7 @@ __int64 __fastcall main(int a1, char **a2, char **a3)
 }
 ```
 - Masalahnya: **sub_1350()** selalu dieksekusi
-- Flag function **sub_1260** dipanggil di luar
+- Flag function **sub_1260** hanya di panggil disaat kondisi terpenuhi
 
 ```
 __int64 __fastcall sub_1350()
@@ -643,3 +643,327 @@ print(f"Flag: {flag}")
 Flag: FGTE{dont_type_it_reverse_it}
 ```
 ### Flag: FGTE{dont_type_it_reverse_it}
+
+### Checksumd
+![checksumd](img/checksumd.png)
+
+```
+λ ~/Checksumd/ main* ./checksumd                
+checksumd - file integrity verifier
+
+Usage:
+  checksumd verify <file>
+λ ~/Checksumd/ main* ./checksumd verify data.bin
+Invalid checksum
+λ ~/Checksumd/ main* file checksumd             
+checksumd: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, Go BuildID=k8CJY951aSq8lcz5iy7l/HE2qczOsZsQOpWRO_K4p/kBFsA-ZRO8AlvSp8KhBv/fkyPIv3HHuajmv_0Ed6u, stripped
+```
+- di bawah ini hasil strings saya yang menunjukkan kalo ini bahasa golang, untuk memastikan lagi ga cuman tau dari soal
+```
+internal/cpu.processOptions
+internal/cpu.indexByte
+internal/cpu.doinit
+internal/cpu.isSet
+internal/cpu.cpuid
+internal/cpu.xgetbv
+type..eq.internal/cpu.option
+type..eq.[...]internal/cpu.option
+runtime/internal/sys.OnesCount64
+type..eq.internal/abi.RegArgs
+internal/bytealg.init.0
+cmpbody
+runtime.cmpstring
+memeqbody
+runtime.memequal
+runtime.memequal_varlen
+indexbytebody
+internal/bytealg.IndexByteString
+runtime/internal/syscall.Syscall6
+runtime.memhash128
+runtime.strhashFallback
+runtime.f32hash
+runtime.fastrand
+runtime.f64hash
+runtime.c64hash
+runtime.c128hash
+runtime.interhash
+runtime.isDirectIface
+runtime.nilinterhash
+runtime.typehash
+runtime.(*structfield).offset
+runtime.add
+runtime.memequal0
+runtime.memequal8
+runtime.memequal16
+runtime.memequal32
+runtime.memequal64
+runtime.memequal128
+runtime.f32equal
+runtime.f64equal
+runtime.c64equal
+runtime.c128equal
+runtime.strequal
+:
+```
+![ida_checksumd](img/ida_checksumd1.png)
+
+- `main_verify`:
+1. `if ( v21 != 16 ) { ... os_Exit(1); }`
+data.bin harus berukuran tepat 16 byte. Jika tidak, program exit
+```
+  v38 = 4919;
+  v39 = 0;
+  while ( v21 > v39 )
+  {
+    v40 = *(unsigned __int8 *)(All + v39++);
+    v41 = v40 ^ v38;
+    LOWORD(v41) = __ROL2__(v41, 3);
+    v38 = v41 + 66;
+  }
+```
+- di atas adalah algoritma checksumd
+1. Ambil Current State (v38).
+2. Tabrakkan dengan Input Byte (XOR).
+3. Acak posisi bit-nya (Rotate Left 3).
+4. Geser nilainya (Tambah 66).
+5. Jadikan ini New State (v38).
+
+- oke jadi intinya isi yang harus ada di dalam data.bin 16 byte.
+isi bytenya harus sedemikian rupa sehingga jika diproses dengan rumus di atas, hasil akhirnya adalah 24378.
+
+```
+from z3 import *
+
+s = Solver()
+chars = [BitVec(f'c{i}', 16) for i in range(16)]
+state = 4919
+
+for c in chars:
+    s.add(c >= 32, c <= 126)           
+    state = RotateLeft(c ^ state, 3) + 66
+
+s.add(state == 24378)                  
+
+if s.check() == sat:
+    res = "".join([chr(s.model()[c].as_long()) for c in chars])
+    print(f"Key Found: {res}")
+    with open("data.bin", "w") as f:   
+        f.write(res)
+else:
+    print("Unsolvable")
+```
+- Operasi RotateLeft (bit yang keluar kiri masuk kanan) sangat sulit dihitung mundur (reverse) secara manual karena informasi bit-nya berpindah tempat. Z3 menangani bit-vector logic secara native, jadi ia bisa memutar balik proses tersebut tanpa masalah.
+
+```
+(venv) λ ~/Checksumd/ main* python solver.py                       
+Key Found: h@/Wr"qlHO\B^c$$
+(venv) λ ~/Checksumd/ main* ./checksumd verify data.bin
+Checksum OK
+FGTE{c0de_y0ur_ch3cksum_succ3ssfully!}
+```
+### Flag : FGTE{c0de_y0ur_ch3cksum_succ3ssfully!}
+
+### silent Checksum
+![silent-checksum-image](img/silent_checksum1.png)
+
+```
+λ ~/silent_checksum/ main* ./silent_checksum_linux    
+Wrong!
+λ ~/silent_checksum/ main* ./silent_checksum_linux aaaa
+Wrong!
+λ ~/silent_checksum/ main* strings silent_checksum_linux 
+/lib64/ld-linux-x86-64.so.2
+puts
+usleep
+ptrace
+__libc_start_main
+__cxa_finalize
+__errno_location
+libc.so.6
+GLIBC_2.2.5
+GLIBC_2.34
+_ITM_deregisterTMCloneTable
+__gmon_start__
+_ITM_registerTMCloneTable
+l$@L
+)D$ 
+[]A\A]
+PTE1
+u+UH
+ATUSH
+o_ H
+oW@f
+oG0f
+oGPf
+oGPf
+[]A\A]
+ATUH
+[]A\
+ATUH
+[]A\
+Wrong!
+;*3$"
+qpcrLera
+bzh{
+tJGCC: (Debian 12.2.0-14+deb12u1) 12.2.0
+.shstrtab
+.interp
+.note.gnu.property
+.note.gnu.build-id
+.note.ABI-tag
+.gnu.hash
+.dynsym
+.dynstr
+.gnu.version
+.gnu.version_r
+.rela.dyn
+.rela.plt
+.init
+.plt.got
+.text
+.fini
+.rodata
+.eh_frame_hdr
+.eh_frame
+.init_array
+.fini_array
+.dynamic
+.got.plt
+.data
+.bss
+.comment
+λ ~/silent_checksum/ main* file silent_checksum_linux 
+silent_checksum_linux: ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, BuildID[sha1]=1a5f49d9fb5fd2f176b51d75e2fb9c98d687d954, for GNU/Linux 3.2.0, stripped
+λ ~/silent_checksum/ main* 
+```
+- dari hasil string saya di atas ada ptrace yang mengindikasi adanya **Anti-Debugging**
+```
+λ ~/silent_checksum/ main* ltrace ./silent_checksum_linux
+ptrace(0, 0, 0, 0)                                                                                        = -1
+__errno_location()                                                                                        = 0x7fb1efca46e0
+puts("Wrong!"Wrong!
+)                                                                                            = 7
++++ exited (status 0) +++
+λ ~/silent_checksum/ main* 
+```
+- -1 (error), program langsung tahu dia sedang dipantau, mencetak "Wrong!", dan keluar. Program tidak sempat menjalankan logika pengecekan flag yang sebenarnya.
+`https://linux.die.net/man/2/ptrace`
+Mekanismenya:
+Program memanggil ptrace(PTRACE_TRACEME, ...) di awal kode main().
+Jika kamu menjalankan program secara normal, panggilannya sukses (return 0).
+Jika kamu menjalankan program menggunakan GDB, strace, atau ltrace, alat-alat tersebut sudah menjadi tracer.
+Akibatnya, panggilan ptrace di dalam program gagal (return -1).
+- selanjutnya coba kita buka binary pake ida
+```
+__int64 __fastcall main(int a1, char **a2, char **a3)
+{
+  unsigned __int64 v3; // rbx
+  __int64 v4; // rax
+  const char *v5; // rdi
+  __int64 v7; // rax
+  char *v8; // rax
+  char *v9; // rbx
+  char v10; // dl
+  char v11; // cl
+  _BYTE v12[32]; // [rsp+0h] [rbp-148h] BYREF
+  __m128i si128; // [rsp+20h] [rbp-128h]
+  int v14; // [rsp+30h] [rbp-118h]
+  _BYTE v15[96]; // [rsp+40h] [rbp-108h] BYREF
+  _BYTE v16[168]; // [rsp+A0h] [rbp-A8h] BYREF
+
+  if ( ptrace(PTRACE_TRACEME, 0, 0, 0) != -1 || *__errno_location() != 1 )
+  {
+    if ( (unsigned int)sub_18A0() )
+    {
+      usleep(0x249F0u);
+    }
+    else
+    {
+      sub_12B0(v15, byte_4040);
+      v3 = qword_4030;
+      sub_1640(v15, byte_4040, qword_4030);
+      sub_1730(v15, v12);
+      v4 = 0;
+      v14 = -69733426;
+      si128 = _mm_load_si128((const __m128i *)&xmmword_2030);
+      while ( v12[v4] == si128.m128i_i8[v4] )
+      {
+        if ( ++v4 == 20 )
+        {
+          if ( v3 > 0x7F )
+            return 0;
+          if ( !v3 )
+          {
+            v16[0] = 0;
+            break;
+          }
+          v7 = 0;
+          v5 = v16;
+          do
+          {
+            v16[v7] = byte_4040[v7] ^ 0x37;
+            ++v7;
+          }
+          while ( v3 != v7 );
+          v16[v3] = 0;
+          v8 = v16;
+          v9 = &v16[v3];
+          v10 = 0;
+          do
+          {
+            v11 = *v8++;
+            v10 += v11;
+          }
+          while ( v9 != v8 );
+          if ( v10 == 90 )
+            goto LABEL_8;
+          break;
+        }
+      }
+    }
+  }
+  v5 = "Wrong!";
+LABEL_8:
+  puts(v5);
+  return 0;
+}
+```
+- jika semua pengecekan lolos, program melakukan dekripsi sederhana menggunakan XOR: 
+```
+v5 = v16;
+do
+{
+  v16[v7] = byte_4040[v7] ^ 0x37; 
+  ++v7;
+}
+while ( v3 != v7 );
+```
+- isi dari byte_4040:
+```
+.data:0000000000004040 byte_4040       db 71h, 70h, 63h, 72h, 4Ch, 65h, 72h, 61h, 4, 65h, 2, 4
+.data:000000000000404C                 db 68h, 74h, 7Fh, 4, 74h, 7Ch, 2, 62h, 7Ah, 68h, 7Bh, 7
+.data:0000000000004058                 db 70h, 6, 74h, 4Ah
+```
+- ambil data byte_4040 dan melakukan XOR dengan 0x37
+```
+data = [
+    0x71, 0x70, 0x63, 0x72, 0x4C, 0x65, 0x72, 0x61, 0x04, 0x65, 0x02, 0x04,
+    0x68, 0x74, 0x7F, 0x04, 0x74, 0x7C, 0x02, 0x62, 0x7A, 0x68, 0x7B, 0x07,
+    0x70, 0x06, 0x74, 0x4A
+]
+
+key = 0x37
+flag = ""
+
+for number in data:
+    huruf = chr(number ^ key)
+    flag = flag + huruf
+
+print("Fleknya adalah: ", flag)
+```
+
+```
+λ ~/silent_checksum/ main* python solved.py 
+Fleknya adalah:  FGTE{REV3R53_CH3CK5UM_L0G1C}
+```
+### Flag: FGTE{REV3R53_CH3CK5UM_L0G1C}
