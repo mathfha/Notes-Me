@@ -11,8 +11,11 @@ Saya lagi belajar pwn dan rev bang ijin nulis **write up**
 - [Learn Typing](#learn-typing) | [Solved]
 - [Checksumd](#checksumd) | [Solved]
 - [Silent Checksum](#silent-checksum) | [Solved]
-- [Activation](#activation)
-- [Dompet Crypto 2011](#dompet-crypto-2011)
+- [Activation](#activation) | [Belum solved]
+- [Dompet Crypto 2011](#dompet-crypto-2011) | [Belum solved]
+
+## pwn :
+- [baby stack](#baby-stack) [Nunggu vps aktif]
 
 ### Leaky login
 ![Leaky login Screenshot](img/Leaky_Login.png)
@@ -967,3 +970,169 @@ print("Fleknya adalah: ", flag)
 Fleknya adalah:  FGTE{REV3R53_CH3CK5UM_L0G1C}
 ```
 ### Flag: FGTE{REV3R53_CH3CK5UM_L0G1C}
+
+### activation
+![activation](img/activation1.png)
+
+```
+λ ~/activation/ main* file activator.exe
+activator.exe: PE32 executable for MS Windows 4.00 (console), Intel i386 Mono/.Net assembly, 4 sections
+λ ~/activation/ main* wine ./activator.exe
+0024:fixme:ntdll:NtQuerySystemInformation info_class SYSTEM_PERFORMANCE_INFORMATION
+Activator v1.0
+Usage: activator.exe <username> <license>
+λ ~/activation/ main* wine ./activator.exe adit wkwkkwkwkwkwk
+0024:fixme:ntdll:NtQuerySystemInformation info_class SYSTEM_PERFORMANCE_INFORMATION
+Activator v1.0
+Invalid username.
+```
+- ternyata executable karena saya pake linux saya run pake wine dan program meminta username dan license kalo kita baca dari soal licensenya harus coco dengan username okeyy kita lanjut analisis.
+```
+λ ~/activation/ main* strings activator.exe         
+!This program cannot be run in DOS mode.
+.text
+`.sdata
+.rsrc
+@.reloc
+*BSJB
+v4.0.30319
+#Strings
+#GUID
+#Blob
+<Module>
+ActivatorApp
+Program
+userChunks
+saltChunks
+maskEnc
+encryptedBlob
+Encoding
+System.Text
+get_UTF8
+String
+System
+Concat
+Convert
+FromBase64String
+GetString
+Byte
+username
+HMACSHA256
+System.Security.Cryptography
+.ctor
+GetBytes
+HashAlgorithm
+ComputeHash
+StringBuilder
+ToString
+Append
+Object
+IDisposable
+Dispose
+license
+ToBase64String
+SHA256
+Create
+Buffer
+BlockCopy
+Array
+SymmetricAlgorithm
+set_KeySize
+set_Key
+set_IV
+set_Mode
+CipherMode
+set_Padding
+PaddingMode
+ICryptoTransform
+CreateDecryptor
+TransformFinalBlock
+args
+Console
+WriteLine
+Equals
+StringComparison
+Exception
+get_Message
+<PrivateImplementationDetails>
+$ArrayType=8
+$field-F33D2A9899E40B4576349F07E0036B8A5D2FDE79
+RuntimeHelpers
+System.Runtime.CompilerServices
+InitializeArray
+RuntimeFieldHandle
+$ArrayType=64
+$field-CE2D831DB50BDC921D7ABCBBD8AEBA664601AF32
+CompilerGeneratedAttribute
+GetEmbeddedUsername
+UnmaskMask
+GetSalt
+ExpectedLicense
+DeriveKeyFromLicense
+DecryptBlob
+Main
+.cctor
+ValueType
+activator
+RuntimeCompatibilityAttribute
+mscorlib
+activator.exe
+WrapNonExceptionThrows
+_CorExeMain
+mscoree.dll
+UTGVlPGU
+```
+- `GetEmbeddedUsername`: username disimpan dalam hardcode 
+- `ExpectedLicense`: ngecek format license
+- dll
+```
+import hmac
+import hashlib
+import base64
+
+# "UkFOSQ=="
+username = b"RANI"
+
+salt_full_string = "c2FsdF9wYXJ0XzFfZnJvbV9jcmU=" 
+salt_bytes = base64.b64decode(salt_full_string) 
+
+hash_maker = hmac.new(salt_bytes, username, hashlib.sha256)
+full_hash = hash_maker.hexdigest().upper()
+
+final_license = full_hash[:16]
+
+print(f"Hash: {full_hash}")
+print(f"License  : {final_license}")
+```
+
+```
+λ ~/activation/ main* python3 solver.py
+Hash: 0905E413DDF6D48B63EA271055B05D7BB30CC11509CF5DF17B36CC746400A909
+License  : 0905E413DDF6D48B
+λ ~/activation/ main* wine ./activator.exe RANI 0905E413DDF6D48B
+0024:fixme:ntdll:NtQuerySystemInformation info_class SYSTEM_PERFORMANCE_INFORMATION
+Activator v1.0
+Activation OK. Here is your secret:
+FGTE{L!c3n$3_4cTiv@t10n_7xY9_b2Q8R5s}
+```
+
+```
+aUkfosq:                                // DATA XREF: ActivatorApp.Program__.cctor+8↑o
+    text "UTF-16LE", "UkFOSQ==",0
+aC2fsdf9w:                              // DATA XREF: ActivatorApp.Program__.cctor+1B↑o
+    text "UTF-16LE", "c2FsdF9w",0
+aYxj0xzff:                              // DATA XREF: ActivatorApp.Program__.cctor+23↑o
+    text "UTF-16LE", "YXJ0XzFf",0
+aZnjvbv9j:                              // DATA XREF: ActivatorApp.Program__.cctor+2B↑o
+    text "UTF-16LE", "ZnJvbV9j",0
+aCmu:                                   // DATA XREF: ActivatorApp.Program__.cctor+33↑o
+    text "UTF-16LE", "cmU=",0
+```
+- okey saatnya saya jelasin solvernya dan kenapa saya membuat script di atas
+- solver menghitung ulang lisensi yang valid menggunakan rumus matematika yang sama persis dengan yang dipakai oleh program
+- (Username userChunks, Salt saltChunks, dan Flag Terenkripsi encryptedBlob).
+- ngambil kepingan saltChunks dan menyusunnya menjadi key: salt_part_1_from_cre.
+- Kalkulasi Hash: Program menghitung rumus matematika: HMAC-SHA256(Key=Salt, Pesan="RANI"). Hasilnya adalah hash panjang (64 karakter).
+- Program HANYA mengambil 8 byte pertama dari hash tersebut (loop i < 8).
+- 8 byte ini diubah menjadi 16 karakter Hex.
+### Flag: FGTE{L!c3n$3_4cTiv@t10n_7xY9_b2Q8R5s}
