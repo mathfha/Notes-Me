@@ -11,7 +11,7 @@ Saya lagi belajar pwn dan rev bang ijin nulis **write up**
 - [Learn Typing](#learn-typing) | [Solved]
 - [Checksumd](#checksumd) | [Solved]
 - [Silent Checksum](#silent-checksum) | [Solved]
-- [Activation](#activation) | [Belum solved]
+- [Activation](#activation) | [Solved]
 - [Dompet Crypto 2011](#dompet-crypto-2011) | [Belum solved]
 
 ## pwn :
